@@ -75,9 +75,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/loglog.git"
+    "url": "git+https://github.com/PaulleDemon/logLog.git"
   },
+  "bugs": {
+    "url": "https://github.com/PaulleDemon/logLog/issues"
+  },
+  "homepage": "https://github.com/PaulleDemon/logLog#readme",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }
