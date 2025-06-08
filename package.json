@@ -1,5 +1,5 @@
 {
-  "name": "@loglog/core",
+  "name": "loglog-core",
   "version": "1.0.4",
   "description": "A scalable, framework-agnostic logging system with built-in support for various frameworks",
   "main": "dist/index.js",
