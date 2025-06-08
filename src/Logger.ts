@@ -1,5 +1,5 @@
 import { createLogger, format, transports, Logger as WinstonLoggerType } from 'winston';
-import DailyRotateFile from 'winston-daily-rotate-file';
+import { createStream } from 'rotating-file-stream';
 import { v4 as uuidv4 } from 'uuid';
 import * as opentelemetry from '@opentelemetry/api';
 import {
@@ -10,6 +10,8 @@ import {
   LogContext,
   LogRotationOptions
 } from './types';
+
+const isServer = typeof window === 'undefined';
 
 /** Default options for log file rotation */
 const DEFAULT_ROTATION_OPTIONS: LogRotationOptions = {
@@ -50,6 +52,7 @@ export class Logger {
   private transports: LogTransport[] = [];
   private winstonLogger!: WinstonLoggerType;
   private defaultContext: LogContext;
+  private rotatingStream: any;
 
   /**
    * Creates a new Logger instance with the specified options
@@ -78,7 +81,7 @@ export class Logger {
       ...this.options.defaultContext
     };
 
-    if (this.options.logToFile && this.options.rotationOptions) {
+    if (isServer && this.options.logToFile && this.options.rotationOptions) {
       this.setupFileTransport();
     }
 
@@ -125,25 +128,25 @@ export class Logger {
    * @private
    */
   private setupFileTransport() {
-    if (!this.options.logToFile || !this.options.rotationOptions) {
+    if (!isServer || !this.options.logToFile || !this.options.rotationOptions) {
       return;
     }
 
-    const rotateTransport = new DailyRotateFile({
-      filename: this.options.logFilePath,
-      ...this.options.rotationOptions
+    const filename = this.options.logFilePath.replace(/%DATE%/g, 'YYYY-MM-DD');
+    
+    this.rotatingStream = createStream(filename, {
+      size: this.options.rotationOptions.maxSize,
+      interval: this.options.rotationOptions.datePattern === 'YYYY-MM-DD' ? '1d' : this.options.rotationOptions.datePattern,
+      compress: this.options.rotationOptions.zippedArchive ? "gzip" : false,
+      maxFiles: parseInt(this.options.rotationOptions.maxFiles as string) || 14
     });
-
-    this.winstonLogger.add(rotateTransport);
 
     this.addTransport({
       log: (entry: LogEntry) => {
         const formattedMessage = this.options.format(entry);
-        this.winstonLogger.log({
-          level: entry.level,
-          message: formattedMessage,
-          ...this.enrichLogEntry(entry)
-        });
+        if (this.rotatingStream) {
+          this.rotatingStream.write(formattedMessage + '\n');
+        }
       }
     });
   }
