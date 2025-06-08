@@ -1,0 +1,28 @@
+# Node.js dependencies
+node_modules/
+
+# npm debug logs
+npm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE specific files
+.vscode/
+.idea/
+
+# Build output
+dist/
+build/
+
+# Logs
+logs/
+
+# Coverage output
+coverage/
+
+# OS specific files
+.DS_Store
+Thumbs.db
