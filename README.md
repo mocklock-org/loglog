@@ -4,20 +4,20 @@ A scalable, framework-agnostic logging system with built-in support for Express.
 
 ## Features
 
-- 🚀 Framework agnostic core with framework-specific adapters
-- 📝 Structured logging with JSON support
-- 🔄 Log rotation and compression
-- 🔍 Request/response logging middleware
-- 🔒 Sensitive data redaction
-- 📊 OpenTelemetry integration
-- ⚡ Performance timing
-- 🎨 Colorized console output
-- 🔧 Highly configurable
+- Framework agnostic core with framework-specific adapters
+- Structured logging with JSON support
+- Log rotation and compression
+- Request/response logging middleware
+- Sensitive data redaction
+- OpenTelemetry integration
+- Performance timing
+- Colorized console output
+- Highly configurable
 
 ## Installation
 
 ```bash
-npm install @loglog/core
+npm install loglog-core
 ```
 
 For framework-specific features, ensure you have the necessary peer dependencies:
@@ -33,7 +33,7 @@ npm install next
 ## Basic Usage
 
 ```typescript
-import { Logger, LogLevel } from '@loglog/core';
+import { Logger, LogLevel } from 'loglog-core';
 
 const logger = new Logger({
   level: LogLevel.DEBUG,
@@ -57,7 +57,7 @@ logger.error('Error occurred', new Error('Something went wrong'));
 
 ```typescript
 import express from 'express';
-import { Logger, LogLevel, ExpressAdapter } from '@loglog/core';
+import { Logger, LogLevel, ExpressAdapter } from 'loglog-core';
 
 const app = express();
 const logger = new Logger({
@@ -93,7 +93,7 @@ app.post('/api/users', (req, res) => {
 
 ```typescript
 import { NextApiRequest, NextApiResponse } from 'next';
-import { Logger, LogLevel, NextjsAdapter } from '@loglog/core';
+import { Logger, LogLevel, NextjsAdapter } from 'loglog-core';
 
 const logger = new Logger({
   level: LogLevel.INFO,
@@ -131,7 +131,7 @@ export default withLogging(async function handler(req: NextApiRequest, res: Next
 
 ```typescript
 // app/api/logger.ts
-import { Logger, LogLevel } from '@loglog/core';
+import { Logger, LogLevel } from 'loglog-core';
 
 export const logger = new Logger({
   level: LogLevel.INFO,
@@ -167,7 +167,7 @@ export async function POST(request: Request) {
 ### Custom Transport
 
 ```typescript
-import { Logger, LogTransport, LogEntry } from '@loglog/core';
+import { Logger, LogTransport, LogEntry } from 'loglog-core';
 
 const customTransport: LogTransport = {
   log: (entry: LogEntry) => {
@@ -220,7 +220,7 @@ function processUser(userId: string) {
 You can create adapters for other frameworks by implementing the `LoggingAdapter` interface:
 
 ```typescript
-import { LoggingAdapter, Logger, RequestInfo, ResponseInfo } from '@loglog/core';
+import { LoggingAdapter, Logger, RequestInfo, ResponseInfo } from 'loglog-core';
 
 export class CustomAdapter implements LoggingAdapter {
   initialize(logger: Logger): void {
