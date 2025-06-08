@@ -1,0 +1,56 @@
+name: LogLog Version Control and Release Notes
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  version-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Setup Git User
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+      
+      - name: Generate Release Notes
+        run: |
+          echo "## What's Changed" > RELEASE_NOTES.md
+          git log $(git describe --tags --abbrev=0 2>/dev/null || echo HEAD^)..HEAD --pretty=format:"* %s" >> RELEASE_NOTES.md
+      
+      - name: Conventional Version Bump
+        id: version-bump
+        uses: phips28/gh-action-bump-version@v10.1.1
+        with:
+          tag-prefix: 'v'
+          commit-message: 'ci: bump version to {{version}} [skip ci]'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: steps.version-bump.outputs.newTag
+        with:
+          tag_name: ${{ steps.version-bump.outputs.newTag }}
+          name: Release ${{ steps.version-bump.outputs.newTag }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
