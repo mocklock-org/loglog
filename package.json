@@ -75,12 +75,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/PaulleDemon/logLog.git"
+    "url": "git+https://github.com/mocklock-org/loglog.git"
   },
   "bugs": {
-    "url": "https://github.com/PaulleDemon/logLog/issues"
+    "url": "https://github.com/mocklock-org/loglog/issues"
   },
-  "homepage": "https://github.com/PaulleDemon/logLog#readme",
+  "homepage": "https://github.com/mocklock-org/loglog#readme",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
