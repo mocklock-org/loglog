@@ -1,4 +1,3 @@
-import { createLogger, format, transports, Logger as WinstonLoggerType } from 'winston';
 import { createStream } from 'rotating-file-stream';
 import { v4 as uuidv4 } from 'uuid';
 import * as opentelemetry from '@opentelemetry/api';
@@ -22,12 +21,11 @@ import { RemoteTransport } from './transports/RemoteTransport';
 
 const isServer = typeof window === 'undefined';
 
-interface RequiredLoggerOptions extends Omit<Required<LoggerOptions>, 'rotationOptions' | 'clientConfig' | 'serverConfig' | 'winstonInstance'> {
+interface RequiredLoggerOptions extends Omit<Required<LoggerOptions>, 'rotationOptions' | 'clientConfig' | 'serverConfig'> {
   rotationOptions: LogRotationOptions | undefined;
   environment: Environment;
   clientConfig?: ClientConfig;
   serverConfig?: ServerConfig;
-  winstonInstance?: WinstonLoggerType;
 }
 
 /**
@@ -65,15 +63,10 @@ interface RequiredLoggerOptions extends Omit<Required<LoggerOptions>, 'rotationO
 export class Logger {
   private options: RequiredLoggerOptions;
   private transports: LogTransport[] = [];
-  private winstonLogger: WinstonLoggerType;
   private defaultContext: LogContext;
   private rotatingStream: any;
   private config: EnvironmentConfig;
 
-  /**
-   * Creates a new Logger instance with the specified options
-   * @param options - Configuration options for the logger
-   */
   constructor(options: LoggerOptions = {}) {
     this.options = {
       level: options.level || LogLevel.INFO,
@@ -85,7 +78,6 @@ export class Logger {
       rotationOptions: undefined,
       defaultContext: options.defaultContext || {},
       structured: options.structured ?? true,
-      winstonInstance: options.winstonInstance,
       customFormats: options.customFormats || [],
       environment: process.env.NODE_ENV as Environment || 'development',
       clientConfig: options.clientConfig,
@@ -101,17 +93,6 @@ export class Logger {
       environment: this.options.environment,
       ...this.options.defaultContext
     };
-
-    // Initialize Winston logger for server-side
-    if (isServer) {
-      this.winstonLogger = this.options.winstonInstance || this.createWinstonLogger();
-    } else {
-      // Create a dummy logger for client-side that does nothing
-      this.winstonLogger = createLogger({
-        silent: true,
-        transports: []
-      });
-    }
 
     this.setupTransports();
   }
@@ -139,9 +120,6 @@ export class Logger {
       if (serverConfig.enableFile) {
         this.setupFileTransport(serverConfig);
       }
-
-      // Winston logger (server-side only)
-      this.winstonLogger = this.createWinstonLogger();
     }
     // Client-side transports
     else {
@@ -154,35 +132,6 @@ export class Logger {
     }
   }
 
-  /**
-   * Creates a Winston logger instance with appropriate configuration
-   * @private
-   */
-  private createWinstonLogger(): WinstonLoggerType {
-    const formatters = [
-      format.timestamp(),
-      format.errors({ stack: true }),
-      this.config.structured ? format.json() : format.simple(),
-      ...(this.options.customFormats || [])
-    ];
-
-    if (this.config.colorize) {
-      formatters.push(format.colorize());
-    }
-
-    return createLogger({
-      level: this.config.level,
-      format: format.combine(...formatters),
-      transports: [
-        new transports.Console()
-      ]
-    });
-  }
-
-  /**
-   * Sets up file transport with rotation options
-   * @private
-   */
   private setupFileTransport(config: ServerConfig) {
     if (!config.rotationOptions) return;
 
@@ -266,7 +215,6 @@ export class Logger {
 
   /**
    * Adds a custom transport to the logger
-   * @param transport - Custom transport implementation
    */
   public addTransport(transport: LogTransport): void {
     this.transports.push(transport);
@@ -299,14 +247,6 @@ export class Logger {
 
   /**
    * Creates a new logger instance with additional context
-   * @param context - Additional context to merge with existing context
-   * @returns New logger instance with combined context
-   * 
-   * @example
-   * ```typescript
-   * const userLogger = logger.withContext({ userId: '123' });
-   * userLogger.info('User action'); // Includes userId in context
-   * ```
    */
   public withContext(context: LogContext): Logger {
     const newLogger = new Logger({
@@ -321,7 +261,6 @@ export class Logger {
 
   /**
    * Creates a high-resolution timer for performance measurements
-   * @returns Function that returns elapsed time in milliseconds
    */
   public startTimer(): () => number {
     const start = process.hrtime();
@@ -344,46 +283,37 @@ export class Logger {
   ): void {
     const entry = this.createLogEntry(level, message, context, error, duration);
     this.transports.forEach(transport => transport.log(entry));
-    
-    this.winstonLogger.log({
-      level,
-      message,
-      ...this.enrichLogEntry(entry)
-    });
   }
 
   /**
    * Logs a debug message
-   * @param message - Log message
-   * @param context - Additional context
    */
   public debug(message: string, context?: LogContext): void {
-    this.log(LogLevel.DEBUG, message, context);
+    if (this.config.level === LogLevel.DEBUG) {
+      this.log(LogLevel.DEBUG, message, context);
+    }
   }
 
   /**
    * Logs an info message
-   * @param message - Log message
-   * @param context - Additional context
    */
   public info(message: string, context?: LogContext): void {
-    this.log(LogLevel.INFO, message, context);
+    if ([LogLevel.DEBUG, LogLevel.INFO].includes(this.config.level)) {
+      this.log(LogLevel.INFO, message, context);
+    }
   }
 
   /**
    * Logs a warning message
-   * @param message - Log message
-   * @param context - Additional context
    */
   public warn(message: string, context?: LogContext): void {
-    this.log(LogLevel.WARN, message, context);
+    if ([LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN].includes(this.config.level)) {
+      this.log(LogLevel.WARN, message, context);
+    }
   }
 
   /**
    * Logs an error message with optional error object
-   * @param message - Error message
-   * @param error - Error object
-   * @param context - Additional context
    */
   public error(message: string, error?: Error, context?: LogContext): void {
     this.log(LogLevel.ERROR, message, context, error);
@@ -391,19 +321,6 @@ export class Logger {
 
   /**
    * Times an async function execution and logs its duration
-   * @param message - Message to log after completion
-   * @param fn - Async function to time
-   * @param context - Additional context
-   * @returns Promise resolving to the function result
-   * 
-   * @example
-   * ```typescript
-   * const result = await logger.time(
-   *   'Database query completed',
-   *   async () => await db.query('SELECT * FROM users'),
-   *   { queryType: 'select' }
-   * );
-   * ```
    */
   public async time<T>(
     message: string,
@@ -425,7 +342,6 @@ export class Logger {
 
   /**
    * Gets the current logger context
-   * @returns Current context object
    */
   public get context(): LogContext {
     return this.defaultContext;

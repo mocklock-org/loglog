@@ -1,5 +1,3 @@
-import { Format } from 'logform';
-import { Logger as WinstonLogger } from 'winston';
 import { Environment, ClientConfig, ServerConfig } from './types/environment';
 
 export enum LogLevel {
@@ -52,8 +50,7 @@ export interface LoggerOptions {
   rotationOptions?: LogRotationOptions;
   defaultContext?: LogContext;
   structured?: boolean;
-  winstonInstance?: WinstonLogger;
-  customFormats?: Format[];
+  customFormats?: any[];
   environment?: Environment;
   clientConfig?: ClientConfig;
   serverConfig?: ServerConfig;
