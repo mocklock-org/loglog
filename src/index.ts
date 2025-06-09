@@ -8,7 +8,25 @@
  * Core logging functionality exports
  */
 export { Logger } from './Logger';
-export { LogLevel, LogEntry, LogContext, LoggerOptions, LogRotationOptions } from './types';
+export { 
+  LogLevel, 
+  LogEntry, 
+  LogContext, 
+  LoggerOptions, 
+  LogRotationOptions 
+} from './types';
+
+/**
+ * Environment-specific configuration exports
+ */
+export {
+  Environment,
+  EnvironmentConfig,
+  ClientConfig,
+  ServerConfig,
+  DEFAULT_CLIENT_CONFIG,
+  DEFAULT_SERVER_CONFIG
+} from './types/environment';
 
 /**
  * Base adapter interface and types for creating custom framework adapters
