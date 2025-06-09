@@ -10,58 +10,71 @@ import {
   LogContext,
   LogRotationOptions
 } from './types';
+import {
+  Environment,
+  EnvironmentConfig,
+  ClientConfig,
+  ServerConfig,
+  DEFAULT_CLIENT_CONFIG,
+  DEFAULT_SERVER_CONFIG
+} from './types/environment';
+import { RemoteTransport } from './transports/RemoteTransport';
 
 const isServer = typeof window === 'undefined';
 
-/** Default options for log file rotation */
-const DEFAULT_ROTATION_OPTIONS: LogRotationOptions = {
-  maxSize: '20m',
-  maxFiles: '14d',
-  datePattern: 'YYYY-MM-DD',
-  zippedArchive: true
-};
-
-interface RequiredLoggerOptions extends Omit<Required<LoggerOptions>, 'rotationOptions'> {
+interface RequiredLoggerOptions extends Omit<Required<LoggerOptions>, 'rotationOptions' | 'clientConfig' | 'serverConfig' | 'winstonInstance'> {
   rotationOptions: LogRotationOptions | undefined;
+  environment: Environment;
+  clientConfig?: ClientConfig;
+  serverConfig?: ServerConfig;
+  winstonInstance?: WinstonLoggerType;
 }
 
 /**
  * Core Logger class that provides structured logging capabilities with support for:
  * - Multiple transport layers
- * - Log rotation
+ * - Log rotation (server-side)
+ * - Remote logging (client-side)
  * - OpenTelemetry integration
  * - Context propagation
  * - Performance timing
  * - Colorized output
+ * - Environment-specific configuration
  * 
  * @example
  * ```typescript
+ * // Server-side logger
  * const logger = new Logger({
- *   level: LogLevel.DEBUG,
- *   logToFile: true,
- *   logFilePath: 'logs/app-%DATE%.log',
- *   structured: true
+ *   environment: 'production',
+ *   serverConfig: {
+ *     logDirectory: 'logs',
+ *     enableFile: true
+ *   }
  * });
  * 
- * logger.info('Application started');
- * logger.error('Error occurred', new Error('Something went wrong'));
+ * // Client-side logger
+ * const logger = new Logger({
+ *   environment: 'production',
+ *   clientConfig: {
+ *     remoteEndpoint: '/api/logs',
+ *     enableRemote: true
+ *   }
+ * });
  * ```
  */
 export class Logger {
   private options: RequiredLoggerOptions;
   private transports: LogTransport[] = [];
-  private winstonLogger!: WinstonLoggerType;
+  private winstonLogger: WinstonLoggerType;
   private defaultContext: LogContext;
   private rotatingStream: any;
+  private config: EnvironmentConfig;
 
   /**
    * Creates a new Logger instance with the specified options
    * @param options - Configuration options for the logger
    */
   constructor(options: LoggerOptions = {}) {
-    // Handle rotation options separately to avoid setting them when file logging is disabled
-    const rotationOptions = options.logToFile ? (options.rotationOptions || DEFAULT_ROTATION_OPTIONS) : undefined;
-
     this.options = {
       level: options.level || LogLevel.INFO,
       timestamp: options.timestamp ?? true,
@@ -69,53 +82,96 @@ export class Logger {
       logToFile: options.logToFile ?? false,
       logFilePath: options.logFilePath || 'logs/app.log',
       format: options.format || this.defaultFormat.bind(this),
-      rotationOptions,
+      rotationOptions: undefined,
       defaultContext: options.defaultContext || {},
       structured: options.structured ?? true,
-      winstonInstance: options.winstonInstance || this.createWinstonLogger(options),
-      customFormats: options.customFormats || []
+      winstonInstance: options.winstonInstance,
+      customFormats: options.customFormats || [],
+      environment: process.env.NODE_ENV as Environment || 'development',
+      clientConfig: options.clientConfig,
+      serverConfig: options.serverConfig
     };
 
+    // Set environment-specific configuration
+    this.config = isServer 
+      ? { ...DEFAULT_SERVER_CONFIG, ...this.options.serverConfig }
+      : { ...DEFAULT_CLIENT_CONFIG, ...this.options.clientConfig };
+
     this.defaultContext = {
-      environment: process.env.NODE_ENV || 'development',
+      environment: this.options.environment,
       ...this.options.defaultContext
     };
 
-    if (isServer && this.options.logToFile && this.options.rotationOptions) {
-      this.setupFileTransport();
+    // Initialize Winston logger for server-side
+    if (isServer) {
+      this.winstonLogger = this.options.winstonInstance || this.createWinstonLogger();
+    } else {
+      // Create a dummy logger for client-side that does nothing
+      this.winstonLogger = createLogger({
+        silent: true,
+        transports: []
+      });
     }
 
-    // Console transport is always added
-    this.addTransport({
-      log: (entry: LogEntry) => {
-        const formattedMessage = this.options.format(entry);
-        if (this.options.colorize) {
-          console.log(this.colorize(entry.level, formattedMessage));
-        } else {
-          console.log(formattedMessage);
+    this.setupTransports();
+  }
+
+  private setupTransports(): void {
+    // Console transport
+    if (this.config.enableConsole) {
+      this.addTransport({
+        log: (entry: LogEntry) => {
+          const formattedMessage = this.options.format(entry);
+          if (this.config.colorize) {
+            console.log(this.colorize(entry.level, formattedMessage));
+          } else {
+            console.log(formattedMessage);
+          }
         }
+      });
+    }
+
+    // Server-side transports
+    if (isServer) {
+      const serverConfig = this.config as ServerConfig;
+      
+      // File transport
+      if (serverConfig.enableFile) {
+        this.setupFileTransport(serverConfig);
       }
-    });
+
+      // Winston logger (server-side only)
+      this.winstonLogger = this.createWinstonLogger();
+    }
+    // Client-side transports
+    else {
+      const clientConfig = this.config as ClientConfig;
+      
+      // Remote transport
+      if (clientConfig.enableRemote && clientConfig.remoteEndpoint) {
+        this.addTransport(new RemoteTransport(clientConfig));
+      }
+    }
   }
 
   /**
    * Creates a Winston logger instance with appropriate configuration
    * @private
    */
-  private createWinstonLogger(options: LoggerOptions): WinstonLoggerType {
+  private createWinstonLogger(): WinstonLoggerType {
     const formatters = [
       format.timestamp(),
       format.errors({ stack: true }),
-      options.structured ? format.json() : format.simple(),
-      ...(options.customFormats || [])
+      this.config.structured ? format.json() : format.simple(),
+      ...(this.options.customFormats || [])
     ];
 
-    if (options.colorize) {
+    if (this.config.colorize) {
       formatters.push(format.colorize());
     }
 
     return createLogger({
-      level: options.level || LogLevel.INFO,
+      level: this.config.level,
       format: format.combine(...formatters),
       transports: [
         new transports.Console()
@@ -127,18 +183,16 @@ export class Logger {
    * Sets up file transport with rotation options
    * @private
    */
-  private setupFileTransport() {
-    if (!isServer || !this.options.logToFile || !this.options.rotationOptions) {
-      return;
-    }
+  private setupFileTransport(config: ServerConfig) {
+    if (!config.rotationOptions) return;
 
     const filename = this.options.logFilePath.replace(/%DATE%/g, 'YYYY-MM-DD');
     
     this.rotatingStream = createStream(filename, {
-      size: this.options.rotationOptions.maxSize,
-      interval: this.options.rotationOptions.datePattern === 'YYYY-MM-DD' ? '1d' : this.options.rotationOptions.datePattern,
-      compress: this.options.rotationOptions.zippedArchive ? "gzip" : false,
-      maxFiles: parseInt(this.options.rotationOptions.maxFiles as string) || 14
+      size: config.rotationOptions.maxSize,
+      interval: config.rotationOptions.datePattern === 'YYYY-MM-DD' ? '1d' : config.rotationOptions.datePattern,
+      compress: config.rotationOptions.zippedArchive ? "gzip" : false,
+      maxFiles: parseInt(config.rotationOptions.maxFiles as string) || 14
     });
 
     this.addTransport({
@@ -375,5 +429,20 @@ export class Logger {
    */
   public get context(): LogContext {
     return this.defaultContext;
+  }
+
+  /**
+   * Cleans up resources and flushes any pending logs
+   */
+  public async cleanup(): Promise<void> {
+    for (const transport of this.transports) {
+      if ('cleanup' in transport && typeof transport.cleanup === 'function') {
+        await transport.cleanup();
+      }
+    }
+
+    if (this.rotatingStream) {
+      this.rotatingStream.end();
+    }
   }
 } 

@@ -1,66 +1,52 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { Logger, LogLevel, NextjsAdapter } from '../src';
 
-// Create a logger instance
+// Initialize logger with environment-specific config
 const logger = new Logger({
-  level: LogLevel.DEBUG,
-  logToFile: true,
-  logFilePath: 'logs/app-%DATE%.log',
-  structured: true,
-  rotationOptions: {
-    maxSize: '10m',
-    maxFiles: '7d',
-    datePattern: 'YYYY-MM-DD',
-    zippedArchive: true
-  },
-  defaultContext: {
-    service: 'my-nextjs-app',
-    environment: process.env.NODE_ENV
+  environment: process.env.NODE_ENV || 'development',
+  clientConfig: {
+    enableConsole: true,
+    enableFile: false,
+    enableRemote: true,
+    remoteEndpoint: '/api/logs',
+    level: LogLevel.INFO,
+    structured: true,
+    colorize: true,
+    timestamp: true,
+    labels: {
+      app: 'my-nextjs-app'
+    },
+    batchSize: 50,
+    flushInterval: 5000,
+    maxRetries: 3
   }
 });
 
-// Create and initialize the Next.js adapter
+// Setup logging adapter
 const loggingAdapter = new NextjsAdapter({
   excludePaths: ['/api/health'],
   logBody: true,
-  logHeaders: true,
-  sensitiveHeaders: ['authorization', 'x-api-key'],
-  sensitiveBodyFields: ['password', 'token']
+  sensitiveHeaders: ['authorization'],
+  sensitiveBodyFields: ['password']
 });
 
 loggingAdapter.initialize(logger);
 
-// Example API route handler with logging
+// Example API route with logging
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Apply the logging middleware
+  // Apply logging middleware
   await loggingAdapter.middleware()(req, res);
 
   try {
-    // Simulate some async work
-    await new Promise(resolve => setTimeout(resolve, 100));
-
     if (req.method === 'POST') {
-      // Example of handling a POST request
       const { username } = req.body;
-
-      if (!username) {
-        res.status(400).json({ error: 'Username is required' });
-        return;
-      }
-
-      // Example response
-      res.status(201).json({
-        id: 123,
-        username,
-        createdAt: new Date().toISOString()
-      });
+      res.status(200).json({ success: true, username });
     } else {
-      // Handle other methods
       res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (error) {
-    logger.error('Error handling request', error as Error);
-    res.status(500).json({ error: 'Internal server error' });
+    logger.error('Request failed', error as Error);
+    res.status(500).json({ error: 'Internal error' });
   }
 }
 

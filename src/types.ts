@@ -1,5 +1,6 @@
 import { Format } from 'logform';
 import { Logger as WinstonLogger } from 'winston';
+import { Environment, ClientConfig, ServerConfig } from './types/environment';
 
 export enum LogLevel {
   DEBUG = 'debug',
@@ -31,6 +32,7 @@ export interface LogEntry {
 
 export interface LogTransport {
   log: (entry: LogEntry) => void;
+  cleanup?: () => Promise<void>;
 }
 
 export interface LogRotationOptions {
@@ -52,4 +54,7 @@ export interface LoggerOptions {
   structured?: boolean;
   winstonInstance?: WinstonLogger;
   customFormats?: Format[];
+  environment?: Environment;
+  clientConfig?: ClientConfig;
+  serverConfig?: ServerConfig;
 } 
