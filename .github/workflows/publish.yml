@@ -1,11 +1,18 @@
 name: Publish Package to npmjs
 on:
   release:
-    types: [published]
+    types: [created]
+  workflow_run:
+    workflows: ["LogLog Version Control and Release Notes"]
+    types:
+      - completed
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'release' }}
     permissions:
       contents: read
       id-token: write
