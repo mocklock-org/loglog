@@ -1,6 +1,6 @@
 {
   "name": "loglog-core",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "A scalable, framework-agnostic logging system with built-in support for various frameworks",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
