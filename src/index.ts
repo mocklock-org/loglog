@@ -10,10 +10,8 @@
 export { Logger } from './Logger';
 export { 
   LogLevel, 
-  LogEntry, 
-  LogContext, 
-  LoggerOptions, 
-  LogRotationOptions 
+  LogEntry,
+  LoggerOptions
 } from './types';
 
 /**
@@ -51,4 +49,20 @@ export { createLoggingMiddleware, getRequestLogger } from './middleware';
 /**
  * Type definitions for middleware configuration
  */
-export type { LoggingMiddlewareOptions } from './middleware'; 
+export type { LoggingMiddlewareOptions } from './middleware';
+
+// Re-export everything from client and server
+import { createLogger as createClientLogger, ClientLogger } from './client';
+import { createLogger as createServerLogger, ServerLogger } from './server';
+export * from './types';
+
+export {
+  createClientLogger,
+  createServerLogger,
+  ClientLogger,
+  ServerLogger
+};
+
+// Note: React exports are intentionally not included here
+// They should be imported from '@loglog/react' specifically
+export * from './react';

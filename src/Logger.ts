@@ -170,7 +170,7 @@ export class Logger {
         ...entry.context,
         traceId,
         spanId,
-        timestamp: entry.timestamp.toISOString()
+        timestamp: entry.timestamp?.toISOString() ?? new Date().toISOString()
       }
     };
   }
@@ -185,7 +185,7 @@ export class Logger {
     }
 
     const timestamp = this.options.timestamp
-      ? `[${entry.timestamp.toISOString()}] `
+      ? `[${entry.timestamp?.toISOString() ?? new Date().toISOString()}] `
       : '';
     const level = `[${entry.level.toUpperCase()}] `;
     const context = entry.context
@@ -298,7 +298,7 @@ export class Logger {
    * Logs an info message
    */
   public info(message: string, context?: LogContext): void {
-    if ([LogLevel.DEBUG, LogLevel.INFO].includes(this.config.level)) {
+    if ([LogLevel.DEBUG, LogLevel.INFO].includes(this.config.level ?? LogLevel.INFO)) {
       this.log(LogLevel.INFO, message, context);
     }
   }
@@ -307,7 +307,7 @@ export class Logger {
    * Logs a warning message
    */
   public warn(message: string, context?: LogContext): void {
-    if ([LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN].includes(this.config.level)) {
+    if ([LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN].includes(this.config.level ?? LogLevel.INFO)) {
       this.log(LogLevel.WARN, message, context);
     }
   }

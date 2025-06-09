@@ -3,25 +3,42 @@ import { LogLevel } from '../types';
 export type Environment = 'development' | 'staging' | 'production' | 'test' | string;
 
 export interface EnvironmentConfig {
-  level: LogLevel;
-  enableConsole: boolean;
-  enableFile: boolean;
-  enableRemote: boolean;
-  structured: boolean;
-  colorize: boolean;
-  timestamp: boolean;
-  labels: Record<string, string>;
+  level?: LogLevel;
+  enableConsole?: boolean;
+  enableFile?: boolean;
+  enableRemote?: boolean;
+  structured?: boolean;
+  colorize?: boolean;
+  timestamp?: boolean;
+  labels?: Record<string, string>;
 }
 
-export interface ClientConfig extends EnvironmentConfig {
+export interface ClientConfig {
+  level?: LogLevel;
+  enableConsole?: boolean;
+  enableFile?: boolean;
+  enableRemote?: boolean;
+  structured?: boolean;
+  colorize?: boolean;
+  timestamp?: boolean;
+  labels?: Record<string, string>;
   remoteEndpoint?: string;
   batchSize?: number;
   flushInterval?: number;
   maxRetries?: number;
 }
 
-export interface ServerConfig extends EnvironmentConfig {
-  logDirectory: string;
+export interface ServerConfig {
+  level?: LogLevel;
+  enableConsole?: boolean;
+  enableFile?: boolean;
+  enableRemote?: boolean;
+  structured?: boolean;
+  colorize?: boolean;
+  timestamp?: boolean;
+  labels?: Record<string, string>;
+  logDirectory?: string;
+  logDir?: string;
   rotationOptions?: {
     maxSize: string;
     maxFiles: string;

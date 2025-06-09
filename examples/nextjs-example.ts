@@ -15,10 +15,7 @@ const logger = new Logger({
     timestamp: true,
     labels: {
       app: 'my-nextjs-app'
-    },
-    batchSize: 50,
-    flushInterval: 5000,
-    maxRetries: 3
+    }
   }
 });
 

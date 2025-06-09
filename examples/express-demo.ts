@@ -7,21 +7,8 @@ const logger = new Logger({
   serverConfig: {
     enableConsole: true,
     enableFile: true,
-    enableRemote: false,
     level: LogLevel.INFO,
-    logDirectory: 'logs',
-    structured: true,
-    colorize: true,
-    timestamp: true,
-    labels: {
-      app: 'express-demo'
-    },
-    rotationOptions: {
-      maxSize: '10m',
-      maxFiles: '7d',
-      datePattern: 'YYYY-MM-DD',
-      zippedArchive: true
-    }
+    logDir: 'logs'
   }
 });
 
