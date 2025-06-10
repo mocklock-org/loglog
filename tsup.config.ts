@@ -1,18 +1,20 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: {
-    'index': 'src/index.ts',
-    'client': 'src/client.ts',
-    'server': 'src/server.ts',
-    'react': 'src/react.tsx'
-  },
+  entry: [
+    'src/index.ts',
+    'src/client.ts',
+    'src/server.ts',
+    'src/react.ts',
+    'src/cli.ts'
+  ],
   format: ['cjs', 'esm'],
   dts: true,
-  clean: true,
-  splitting: true,
-  treeshake: true,
+  splitting: false,
   sourcemap: true,
+  clean: true,
+  shims: true,
+  treeshake: true,
   minify: true,
   target: 'es2020',
   external: ['react', 'rotating-file-stream'],

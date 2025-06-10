@@ -17,8 +17,82 @@ A scalable, framework-agnostic logging system with built-in support for Express.
 
 ## Installation
 
+Choose your preferred package manager:
+
 ```bash
+# Using npm
 npm install loglog-core
+
+# Using yarn
+yarn add loglog-core
+
+# Using pnpm
+pnpm install loglog-core
+```
+
+For CLI usage, install globally:
+
+```bash
+# Using npm
+npm install -g loglog-core
+
+# Using yarn
+yarn global add loglog-core
+
+# Using pnpm
+pnpm add -g loglog-core
+```
+
+## CLI Commands
+
+LogLog comes with a command-line interface that helps you manage and analyze your logs. Install globally to use the CLI:
+
+```bash
+npm install -g loglog-core
+```
+
+Available commands:
+
+```bash
+# Initialize LogLog configuration in your project
+loglog init
+
+# View real-time log stream with optional filtering
+loglog tail [--level=<level>] [--format=json|text] [--filter=<pattern>]
+
+# Search through log files
+loglog search <pattern> [--from=<date>] [--to=<date>] [--level=<level>]
+
+# Rotate log files manually
+loglog rotate
+
+# View log statistics and summaries
+loglog stats [--from=<date>] [--to=<date>]
+
+# Validate LogLog configuration
+loglog validate
+
+# Clear log files (with confirmation)
+loglog clear [--older-than=<days>]
+```
+
+### CLI Examples
+
+```bash
+# Watch INFO and above logs in real-time
+loglog tail --level=info
+
+# Search for error logs from last 24 hours
+loglog search "error" --from="24h"
+
+# View log statistics for the current month
+loglog stats --from="1M"
+
+# Rotate logs that are older than 7 days
+loglog rotate --older-than=7
+
+# Clear all logs older than 30 days
+loglog clear --older-than=30
 ```
 
 ## Basic Usage

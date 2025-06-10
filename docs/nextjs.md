@@ -8,8 +8,9 @@ This guide demonstrates how to integrate LogLog with Next.js applications.
 
 ```typescript
 // lib/logger.ts
-import { Logger, LogLevel } from 'loglog-core';
+import { Logger, LogLevel } from 'loglog-core/client'; // Client-side bundle
 
+// Client-side logger
 export const logger = new Logger({
   environment: process.env.NODE_ENV || 'development',
   clientConfig: {
@@ -21,6 +22,24 @@ export const logger = new Logger({
     labels: {
       app: 'next-app'
     }
+  }
+});
+```
+
+### Server Logger Configuration
+
+```typescript
+// lib/server-logger.ts
+import { Logger, LogLevel } from 'loglog-core/server'; // Server-side bundle
+
+// Server-side logger
+export const serverLogger = new Logger({
+  environment: process.env.NODE_ENV || 'development',
+  serverConfig: {
+    enableConsole: true,
+    enableFile: true,
+    level: LogLevel.INFO,
+    logDir: 'logs'
   }
 });
 ```
@@ -137,7 +156,7 @@ export default function UserForm() {
 
 ```typescript
 // app/api/logs/route.ts
-import { logger } from '@/lib/logger';
+import { serverLogger as logger } from '@/lib/server-logger';
 
 export async function POST(request: Request) {
   try {
@@ -155,7 +174,7 @@ export async function POST(request: Request) {
 
 ```typescript
 // app/api/users/route.ts
-import { logger } from '@/lib/logger';
+import { serverLogger as logger } from '@/lib/server-logger';
 
 export async function GET() {
   try {

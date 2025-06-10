@@ -4,18 +4,16 @@ import { RemoteTransport } from './transports/remote';
 
 export class ClientLogger extends Logger {
   constructor(options: LoggerOptions) {
-    // Override any server-specific options
     const clientOptions = {
       ...options,
       clientConfig: {
         ...options.clientConfig,
-        enableFile: false, // Always disable file logging in client
+        enableFile: false,
       }
     };
 
     super(clientOptions);
 
-    // Only initialize browser-safe transports
     if (clientOptions.clientConfig?.enableConsole) {
       this.addTransport(new ConsoleTransport(clientOptions));
     }
@@ -29,7 +27,6 @@ export class ClientLogger extends Logger {
 export { LogLevel };
 export type { LoggerOptions };
 
-// Factory function for creating client logger
 export function createLogger(options: LoggerOptions) {
   return new ClientLogger(options);
 } 
